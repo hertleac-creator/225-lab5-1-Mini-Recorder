@@ -1,27 +1,161 @@
-body { padding-top: 2rem; font-family: 'Inter', 'Segoe UI', Roboto, sans-serif; }
-.card { border-radius: 0.8rem; border: 1px solid #D7D7D7; }
-
-.btn-primary { background-color: #B00B1E !important; border-color: #B00B1E !important; }
-.btn-primary:hover { background-color: #8E0918 !important; border-color: #8E0918 !important; }
-.btn-outline-secondary { color: #B00B1E !important; border-color: #B00B1E !important; }
-.btn-outline-secondary:hover { background-color: #B00B1E !important; color: #fff !important; }
-
-.table thead th { background: var(--bs-body-bg); border-bottom: 2px solid #B00B1E !important; }
-.table-striped tbody tr:nth-of-type(odd) { background-color: rgba(176, 11, 30, 0.04); }
-[data-bs-theme="dark"] .card { border: 1px solid #333; }
-[data-bs-theme="dark"] .table-striped tbody tr:nth-of-type(odd) { background-color: rgba(176, 11, 30, 0.2); }
-
-/* Miami branding */
-.miami-title {
-  font-family: 'Oswald', sans-serif; font-weight: 600; letter-spacing: 1px;
-  font-size: 1.9rem; line-height: 1.1; color: #B00B1E; text-transform: uppercase;
+/* ============================
+   Base / Typography
+============================ */
+body {
+  padding-top: 2rem;
+  font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
 }
-.miami-subtitle { font-family: 'Inter', sans-serif; font-size: 0.95rem; color: var(--bs-secondary-color); }
-h1, h2, h3, .h1, .h2, .h3 { font-family: 'Oswald', sans-serif; font-weight: 500; }
 
-/* Pagination */
-.page-link { color: #B00B1E !important; border-color: #D7D7D7 !important; }
-.page-link:hover { background-color: rgba(176, 11, 30, 0.1) !important; border-color: #B00B1E !important; color: #8E0918 !important; }
-.page-item.active .page-link { background-color: #B00B1E !important; border-color: #B00B1E !important; color: #fff !important; }
-[data-bs-theme="dark"] .page-link { color: #FFCDD2 !important; }
-[data-bs-theme="dark"] .page-item.active .page-link { background-color: #B00B1E !important; border-color: #B00B1E !important; color: #fff !important; }
+h1, h2, h3, .h1, .h2, .h3 {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* Miami Branding */
+.miami-title {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  font-size: 2.2rem;
+  color: #B00B1E;
+  text-transform: uppercase;
+  text-shadow: 0 2px 4px rgba(176, 11, 30, 0.25);
+}
+
+.miami-subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  opacity: 0.85;
+}
+
+/* ============================
+   Card Enhancements
+============================ */
+.card {
+  border-radius: 1rem;
+  border: 1px solid #D7D7D7;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(176, 11, 30, 0.18);
+}
+
+[data-bs-theme="dark"] .card {
+  border: 1px solid #333;
+  background: #1a1a1a;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.07);
+}
+
+/* ============================
+   Buttons (Primary & Outline)
+============================ */
+.btn-primary {
+  background-color: #B00B1E !important;
+  border-color: #B00B1E !important;
+  border-radius: 0.6rem !important;
+  padding: 0.55rem 1.1rem !important;
+  transition: background 0.25s ease, transform 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: #8E0918 !important;
+  transform: translateY(-2px);
+}
+
+.btn-outline-secondary {
+  color: #B00B1E !important;
+  border-color: #B00B1E !important;
+  border-radius: 0.6rem !important;
+  transition: 0.25s ease;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #B00B1E !important;
+  color: #fff !important;
+  transform: translateY(-2px);
+}
+
+/* Dark mode buttons */
+[data-bs-theme="dark"] .btn-outline-secondary {
+  color: #FFCDD2 !important;
+  border-color: #FFCDD2 !important;
+}
+[data-bs-theme="dark"] .btn-outline-secondary:hover {
+  background-color: #FFCDD2 !important;
+  color: #000 !important;
+}
+
+/* ============================
+   Table Styling
+============================ */
+.table {
+  border-collapse: separate;
+  border-spacing: 0 0.4rem;
+}
+
+.table thead th {
+  background: var(--bs-body-bg);
+  border-bottom: 2px solid #B00B1E !important;
+  font-weight: 600;
+}
+
+.table-striped tbody tr {
+  transition: background 0.25s ease;
+}
+
+.table-striped tbody tr:hover {
+  background-color: rgba(176, 11, 30, 0.12) !important;
+  cursor: pointer;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+  background-color: rgba(176, 11, 30, 0.05);
+}
+
+[data-bs-theme="dark"] .table-striped tbody tr:nth-of-type(odd) {
+  background-color: rgba(176, 11, 30, 0.18);
+}
+
+/* ============================
+   Pagination
+============================ */
+.page-link {
+  color: #B00B1E !important;
+  border-color: #D7D7D7 !important;
+  border-radius: 0.5rem !important;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.page-link:hover {
+  background-color: rgba(176, 11, 30, 0.15) !important;
+  border-color: #B00B1E !important;
+}
+
+.page-item.active .page-link {
+  background-color: #B00B1E !important;
+  border-color: #B00B1E !important;
+  color: #fff !important;
+}
+
+[data-bs-theme="dark"] .page-link {
+  color: #FFCDD2 !important;
+  border-color: #444 !important;
+}
+
+[data-bs-theme="dark"] .page-item.active .page-link {
+  background-color: #B00B1E !important;
+  color: #fff !important;
+}
+
+/* ============================
+   Smooth Global Animations
+============================ */
+* {
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}

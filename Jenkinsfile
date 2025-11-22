@@ -6,7 +6,7 @@ pipeline {
         DOCKER_CREDENTIALS_ID = 'roseaw-dockerhub'
         DOCKER_IMAGE = 'cithit/hertleac'  //<<-- Replace with your MiamiID–blessed image name
         IMAGE_TAG = "build-${BUILD_NUMBER}"
-        GITHUB_URL = 
+        GITHUB_URL = 'https://github.com/hertleac-creator/225-lab5-1-Mini-Recorder.git'
         KUBECONFIG = credentials('hertleac-225') 
     }
 

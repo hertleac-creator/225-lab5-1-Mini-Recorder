@@ -2,9 +2,8 @@ pipeline {
     agent any
 
     environment {
-        // Sacred credentials and identifiers
         DOCKER_CREDENTIALS_ID = 'roseaw-dockerhub'
-        DOCKER_IMAGE = 'cithit/hertleac'  // Replace with your MiamiID–blessed image name
+        DOCKER_IMAGE = 'cithit/hertleac'
         IMAGE_TAG = "build-${BUILD_NUMBER}"
         GITHUB_URL = 'https://github.com/hertleac-creator/225-lab5-1-Mini-Recorder.git'
         KUBECONFIG = credentials('hertleac-225') 
@@ -13,7 +12,7 @@ pipeline {
     stages {
 
         // ===========================================
-        // PHASE I: Checkout Code
+        // Checkout
         // ===========================================
         stage('⚙️ Data-Vault Checkout') {
             steps {
@@ -24,7 +23,7 @@ pipeline {
         }
 
         // ===========================================
-        // PHASE II: Static Analysis
+        // Static analysis
         // ===========================================
         stage('📜 HTML Litany Inspection') {
             steps {
@@ -35,17 +34,14 @@ pipeline {
 
         stage('📜 Static Purity Tests') {
             steps {
-                // Python syntax validation
                 sh 'python3 -m py_compile $(find . -name "*.py")'
 
-                // YAML validation
                 sh '''
                 python3 - <<EOF
 import yaml, glob, sys
 for f in glob.glob("*.yaml"):
     try:
-        with open(f) as file:
-            list(yaml.safe_load_all(file))
+        list(yaml.safe_load_all(open(f)))
     except Exception as e:
         print(f"YAML ERROR in {f}: {e}")
         sys.exit(1)
@@ -55,13 +51,13 @@ EOF
         }
 
         // ===========================================
-        // PHASE III: Build and Push Docker
+        // Docker build & push
         // ===========================================
         stage('🏭 Forge Docker War Machine') {
             steps {
                 script {
                     docker.withRegistry('https://registry.hub.docker.com', "${DOCKER_CREDENTIALS_ID}") {
-                        def app = docker.build("${DOCKER_IMAGE}:${IMAGE_TAG}", "-f Dockerfile.build .")
+                        def app = docker.build("${DOCKER_IMAGE}:${IMAGE_TAG}", "-f Dockerfile .")
                         app.push()
                     }
                 }
@@ -69,43 +65,22 @@ EOF
         }
 
         // ===========================================
-        // PHASE IV: Deploy to Dev Environment
+        // Deploy to Dev
         // ===========================================
         stage('⚔️ Deploy to Dev Engagement Zone') {
             steps {
                 script {
-                    // Purge old deployments
                     sh "kubectl delete --all deployments --namespace=default || true"
-
-                    // Update deployment image
                     sh "sed -i 's|${DOCKER_IMAGE}:latest|${DOCKER_IMAGE}:${IMAGE_TAG}|' deployment-dev.yaml"
-
-                    // Apply deployment
                     sh "kubectl apply -f deployment-dev.yaml"
                 }
             }
         }
 
         // ===========================================
-        // PHASE V: DAST Testing
+        // Wait for Flask pod readiness
         // ===========================================
-        stage('🔮 DAST Inquisitorial Ordeal') {
-            steps {
-                sh 'docker pull public.ecr.aws/portswigger/dastardly:latest'
-                sh '''
-                    docker run --user $(id -u) -v ${WORKSPACE}:${WORKSPACE}:rw \
-                    -e HOME=${WORKSPACE} \
-                    -e BURP_START_URL=http://10.48.229.148 \
-                    -e BURP_REPORT_FILE_PATH=${WORKSPACE}/dastardly-report.xml \
-                    public.ecr.aws/portswigger/dastardly:latest
-                '''
-            }
-        }
-
-        // ===========================================
-        // PHASE Vb: Ensure Flask Pod Ready
-        // ===========================================
-        stage('🟢 Ensure Flask Pod Ready') {
+        stage('🟢 Wait for Flask Pod Ready') {
             steps {
                 script {
                     sh "kubectl wait --for=condition=ready pod -l app=flask --timeout=120s"
@@ -114,16 +89,12 @@ EOF
         }
 
         // ===========================================
-        // PHASE VI: Purge old DB data
+        // Purge old DB data
         // ===========================================
         stage('🧹 Dev Database Purification') {
             steps {
                 script {
-                    def appPod = sh(
-                        script: "kubectl get pods -l app=flask -o jsonpath='{.items[0].metadata.name}'",
-                        returnStdout: true
-                    ).trim()
-
+                    def appPod = sh(script: "kubectl get pods -l app=flask -o jsonpath='{.items[0].metadata.name}'", returnStdout: true).trim()
                     sh """
                         kubectl exec ${appPod} -- python3 - <<'PY'
 import sqlite3
@@ -139,16 +110,12 @@ PY
         }
 
         // ===========================================
-        // PHASE VII: Generate Test Data
+        // Generate Selenium-friendly test data
         // ===========================================
         stage('📦 Test Data Resupply') {
             steps {
                 script {
                     def appPod = sh(script: "kubectl get pods -l app=flask -o jsonpath='{.items[0].metadata.name}'", returnStdout: true).trim()
-
-                    // Small delay to allow Flask to stabilize
-                    sh "sleep 10"
-
                     sh "kubectl exec ${appPod} -- python3 /app/data-gen.py"
                     echo "✅ Test data inserted successfully"
                 }
@@ -156,25 +123,36 @@ PY
         }
 
         // ===========================================
-        // PHASE VIII: Selenium QA Verification
+        // Selenium QA
         // ===========================================
         stage('⚙️ Selenium QA Verification') {
             steps {
                 script {
-                    def appPodIP = sh(
-                        script: "kubectl get pod -l app=flask -o jsonpath='{.items[0].status.podIP}'",
-                        returnStdout: true
-                    ).trim()
-
+                    def appPodIP = sh(script: "kubectl get pod -l app=flask -o jsonpath='{.items[0].status.podIP}'", returnStdout: true).trim()
                     echo "🌐 Running Selenium tests against Flask pod at ${appPodIP}"
-
                     sh "python3 tests/test_selenium.py --base-url=http://${appPodIP}:5000"
                 }
             }
         }
 
         // ===========================================
-        // PHASE IX: QA Docker Tests (Mechanicus Trials)
+        // DAST testing
+        // ===========================================
+        stage('🔮 DAST Inquisitorial Ordeal') {
+            steps {
+                sh 'docker pull public.ecr.aws/portswigger/dastardly:latest'
+                sh '''
+                    docker run --user $(id -u) -v ${WORKSPACE}:${WORKSPACE}:rw \
+                    -e HOME=${WORKSPACE} \
+                    -e BURP_START_URL=http://10.48.229.148 \
+                    -e BURP_REPORT_FILE_PATH=${WORKSPACE}/dastardly-report.xml \
+                    public.ecr.aws/portswigger/dastardly:latest
+                '''
+            }
+        }
+
+        // ===========================================
+        // QA Docker tests
         // ===========================================
         stage('⚙️ Adeptus QA Trial Protocols') {
             steps {
@@ -188,7 +166,7 @@ PY
         }
 
         // ===========================================
-        // PHASE X: Cleanup Test Data
+        // Cleanup test data
         // ===========================================
         stage('🧽 Purge Test Data') {
             steps {
@@ -200,7 +178,7 @@ PY
         }
 
         // ===========================================
-        // PHASE XI: Deploy to Production
+        // Deploy to Production
         // ===========================================
         stage('🚀 Deploy to Holy Production Server') {
             steps {
@@ -213,7 +191,7 @@ PY
         }
 
         // ===========================================
-        // PHASE XII: Verify Deployment
+        // Verify deployment
         // ===========================================
         stage('📡 Vox Confirmations') {
             steps {

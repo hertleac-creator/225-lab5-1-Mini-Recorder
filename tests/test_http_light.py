@@ -5,7 +5,7 @@ import urllib.request
 import os
 ENV = os.environ.get("ENVIRONMENT", "dev").lower()
 if ENV == "prod":
-    BASE_URL = "http://10.48.229.55"  # Production LoadBalancer IP
+    BASE_URL = "http://10.48.229.50"  # Production LoadBalancer IP
 else:
     BASE_URL = "http://127.0.0.1:5000"  # Dev ClusterIP via port-forward
 

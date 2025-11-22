@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Contacts</title>
+    <title>Dashboard</title>
 
-    <!-- Fonts (branding) -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
@@ -38,21 +38,26 @@
         {% endif %}
       {% endwith %}
 
-      <!-- Add form -->
+      <!-- Add Contact -->
       <div class="card shadow-sm form-card mb-4">
         <div class="card-body">
           <h2 class="h5 mb-3">Add Contact</h2>
           <form method="POST" action="{{ url_for('index') }}" class="row g-3">
-            <input type="hidden" name="action" value="add">
+            <input type="hidden" name="action" value="add_contact">
+
             <div class="col-md-6">
-              <label for="name" class="form-label">Name</label>
-              <input class="form-control" id="name" name="name" required>
+              <label class="form-label">Name</label>
+              <input class="form-control" name="name" required>
             </div>
+
             <div class="col-md-6">
-              <label for="phone" class="form-label">Phone</label>
-              <input class="form-control" id="phone" name="phone" required
-                     pattern="^[0-9()+\\-\\s]+$" title="Digits, spaces, (), - and + only">
+              <label class="form-label">Phone</label>
+              <input class="form-control"
+                     name="phone"
+                     required
+                     pattern="^[0-9()+\\-\\s]+$">
             </div>
+
             <div class="col-12">
               <button class="btn btn-primary" type="submit">Add Contact</button>
             </div>
@@ -60,114 +65,129 @@
         </div>
       </div>
 
-      <!-- Search + heading -->
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h2 class="h5 m-0">All Contacts</h2>
-        <input id="filter" class="form-control" style="max-width: 280px;" placeholder="Search…">
+      <!-- Add Warhammer Unit -->
+      <div class="card shadow-sm form-card mb-5">
+        <div class="card-body">
+          <h2 class="h5 mb-3">Add Warhammer Unit</h2>
+          <form method="POST" action="{{ url_for('index') }}" class="row g-3">
+            <input type="hidden" name="action" value="add_unit">
+
+            <div class="col-md-4">
+              <label class="form-label">Unit Name</label>
+              <input class="form-control" name="unit_name" required>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Faction</label>
+              <input class="form-control" name="faction" required>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Points</label>
+              <input type="number" class="form-control" name="points" required min="0">
+            </div>
+
+            <div class="col-12">
+              <button class="btn btn-primary" type="submit">Add Unit</button>
+            </div>
+          </form>
+        </div>
       </div>
 
-      <!-- Contacts table -->
-      <div class="card shadow-sm mb-3">
+      <!-- CONTACTS LIST -->
+      <h3 class="h5 mb-2">Contacts</h3>
+      <div class="card shadow-sm mb-5">
         <div class="table-responsive">
           <table class="table align-middle mb-0 table-striped">
             <thead>
               <tr>
-                <th style="width: 8ch">ID</th>
-                <th style="width: 50%">Name</th>
-                <th style="width: 30%">Phone</th>
-                <th class="text-end" style="width: 12%">Actions</th>
+                <th style="width: 6ch">ID</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th class="text-end">Actions</th>
               </tr>
             </thead>
-            <tbody id="rows">
+            <tbody>
               {% for c in contacts %}
               <tr>
-                <td class="id text-secondary">{{ c['id'] }}</td>
-                <td class="name">{{ c['name'] }}</td>
-                <td class="phone text-nowrap">{{ c['phone'] }}</td>
-                <td class="text-end">
-                  <div class="d-inline-flex gap-2">
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-outline-secondary"
-                      data-bs-toggle="modal"
-                      data-bs-target="#editModal"
-                      data-id="{{ c['id'] }}"
-                      data-name="{{ c['name'] }}"
-                      data-phone="{{ c['phone'] }}"
-                    >Edit</button>
+                <td class="text-secondary">{{ c.id }}</td>
+                <td>{{ c.name }}</td>
+                <td class="text-nowrap">{{ c.phone }}</td>
 
-                    <form method="POST" action="{{ url_for('index') }}" onsubmit="return confirm('Delete this contact?')">
-                      <input type="hidden" name="contact_id" value="{{ c['id'] }}">
-                      <input type="hidden" name="action" value="delete">
-                      <button class="btn btn-sm btn-outline-danger">Delete</button>
-                    </form>
-                  </div>
+                <td class="text-end">
+                  <form method="POST" action="{{ url_for('index') }}" onsubmit="return confirm('Delete?')">
+                    <input type="hidden" name="action" value="delete_contact">
+                    <input type="hidden" name="contact_id" value="{{ c.id }}">
+                    <button class="btn btn-sm btn-outline-danger">Delete</button>
+                  </form>
                 </td>
               </tr>
               {% endfor %}
-              {% if not contacts %}
-              <tr><td colspan="4" class="text-center text-secondary py-4">No contacts found.</td></tr>
+
+              {% if contacts|length == 0 %}
+              <tr>
+                <td colspan="4" class="text-center text-secondary py-4">
+                  No contacts yet.
+                </td>
+              </tr>
               {% endif %}
             </tbody>
           </table>
         </div>
       </div>
 
-      <!-- Pagination -->
-      <nav aria-label="Contacts pagination" class="d-flex justify-content-between align-items-center">
-        <div class="text-secondary small">
-          Page <strong>{{ page }}</strong> of <strong>{{ pages }}</strong> · {{ total }} total
+      <!-- WARHAMMER LIST -->
+      <h3 class="h5 mb-2">Warhammer Units</h3>
+      <div class="card shadow-sm mb-5">
+        <div class="table-responsive">
+          <table class="table align-middle mb-0 table-striped">
+            <thead>
+              <tr>
+                <th style="width: 6ch">ID</th>
+                <th>Unit</th>
+                <th>Faction</th>
+                <th>Points</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for u in units %}
+              <tr>
+                <td class="text-secondary">{{ u.id }}</td>
+                <td>{{ u.unit_name }}</td>
+                <td>{{ u.faction }}</td>
+                <td>{{ u.points }}</td>
+
+                <td class="text-end">
+                  <form method="POST" action="{{ url_for('index') }}" onsubmit="return confirm('Delete unit?')">
+                    <input type="hidden" name="action" value="delete_unit">
+                    <input type="hidden" name="unit_id" value="{{ u.id }}">
+                    <button class="btn btn-sm btn-outline-danger">Delete</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+
+              {% if units|length == 0 %}
+              <tr>
+                <td colspan="5" class="text-center text-secondary py-4">
+                  No Warhammer data yet. Add a unit above!
+                </td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
         </div>
-        <ul class="pagination mb-0">
-          <li class="page-item {% if not has_prev %}disabled{% endif %}">
-            <a class="page-link" href="{{ url_for('index', page=page-1, per=per_page) if has_prev else '#' }}">Previous</a>
-          </li>
-          {% for p in range(start_page, end_page + 1) %}
-            <li class="page-item {% if p==page %}active{% endif %}">
-              <a class="page-link" href="{{ url_for('index', page=p, per=per_page) }}">{{ p }}</a>
-            </li>
-          {% endfor %}
-          <li class="page-item {% if not has_next %}disabled{% endif %}">
-            <a class="page-link" href="{{ url_for('index', page=page+1, per=per_page) if has_next else '#' }}">Next</a>
-          </li>
-        </ul>
-      </nav>
+      </div>
 
       <footer class="py-4 text-center text-secondary small">
-        &copy; {{ 2025 }} Erwin Hertlein
+        &copy; 2025 Erwin Hertlein
       </footer>
-    </div>
 
-    <!-- Edit Modal -->
-    <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog">
-        <form method="POST" action="{{ url_for('index') }}" class="modal-content">
-          <input type="hidden" name="action" value="update">
-          <input type="hidden" name="contact_id" id="edit-id">
-          <div class="modal-header">
-            <h5 class="modal-title">Edit Contact</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body row g-3">
-            <div class="col-12">
-              <label class="form-label">Name</label>
-              <input class="form-control" name="name" id="edit-name" required>
-            </div>
-            <div class="col-12">
-              <label class="form-label">Phone</label>
-              <input class="form-control" name="phone" id="edit-phone" required
-                     pattern="^[0-9()+\\-\\s]+$" title="Digits, spaces, (), - and + only">
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
-            <button class="btn btn-primary" type="submit">Save changes</button>
-          </div>
-        </form>
-      </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
   </body>
 </html>
+

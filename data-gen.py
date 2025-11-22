@@ -1,18 +1,25 @@
 #!/usr/bin/env python3
 import sqlite3
 import os
+import sys
 
+# ===========================
+# Database location
+# ===========================
 DATABASE = "/nfs/demo.db"
 
 # ===========================
-#  Connect to the Database
+# Connect to the database
 # ===========================
 def connect_db():
+    # Ensure the folder exists
+    db_dir = os.path.dirname(DATABASE)
+    if not os.path.exists(db_dir):
+        os.makedirs(db_dir, exist_ok=True)
     return sqlite3.connect(DATABASE)
 
-
 # ===========================
-#  Initialize Table if Missing
+# Initialize table if missing
 # ===========================
 def init_db():
     db = connect_db()
@@ -28,13 +35,11 @@ def init_db():
     db.commit()
     db.close()
 
-
 # ===========================
-#  Generate Selenium-Friendly Warhammer Data
+# Generate test data
 # ===========================
-def generate_test_data(num_records):
+def generate_test_data(num_records=10):
     db = connect_db()
-
     print("\n⚔️ Generating test models for Selenium…\n")
 
     for i in range(num_records):
@@ -52,17 +57,17 @@ def generate_test_data(num_records):
 
     db.commit()
     db.close()
-
     print(f"\n🛡️ Test data generation complete — {num_records} entries added.\n")
 
-
 # ===========================
-#  Main Execution
+# Main execution
 # ===========================
 if __name__ == "__main__":
-    # Ensure database folder exists
-    if not os.path.exists(os.path.dirname(DATABASE)):
-        os.makedirs(os.path.dirname(DATABASE), exist_ok=True)
-
-    init_db()
-    generate_test_data(10)
+    try:
+        init_db()
+        # Optional: allow specifying number of records via command line
+        num_records = int(sys.argv[1]) if len(sys.argv) > 1 else 10
+        generate_test_data(num_records)
+    except Exception as e:
+        print(f"❌ Error generating data: {e}")
+        sys.exit(1)

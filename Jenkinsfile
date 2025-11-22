@@ -4,7 +4,7 @@ pipeline {
     environment {
         // Sacred credentials and identifiers
         DOCKER_CREDENTIALS_ID = 'roseaw-dockerhub'
-        DOCKER_IMAGE = 'cithit/hertleac'  //<<-- Replace with your MiamiID–blessed image name
+        DOCKER_IMAGE = 'cithit/hertleac'  // Replace with your MiamiID–blessed image name
         IMAGE_TAG = "build-${BUILD_NUMBER}"
         GITHUB_URL = 'https://github.com/hertleac-creator/225-lab5-1-Mini-Recorder.git'
         KUBECONFIG = credentials('hertleac-225') 
@@ -13,7 +13,7 @@ pipeline {
     stages {
 
         // ===========================================
-        // PHASE I: Retrieve STC fragments from the archives
+        // PHASE I: Checkout Code
         // ===========================================
         stage('⚙️ Data-Vault Checkout') {
             steps {
@@ -24,7 +24,7 @@ pipeline {
         }
 
         // ===========================================
-        // PHASE II: Scan sacred scripts for impurity
+        // PHASE II: Static Analysis
         // ===========================================
         stage('📜 HTML Litany Inspection') {
             steps {
@@ -35,11 +35,10 @@ pipeline {
 
         stage('📜 Static Purity Tests') {
             steps {
-
                 // Python syntax validation
                 sh 'python3 -m py_compile $(find . -name "*.py")'
 
-                // YAML purity inspections
+                // YAML validation
                 sh '''
                 python3 - <<EOF
 import yaml, glob, sys
@@ -56,7 +55,7 @@ EOF
         }
 
         // ===========================================
-        // PHASE III: Forge the Docker combat frame
+        // PHASE III: Build and Push Docker
         // ===========================================
         stage('🏭 Forge Docker War Machine') {
             steps {
@@ -70,34 +69,29 @@ EOF
         }
 
         // ===========================================
-        // PHASE IV: Deploy to the Dev Theatre of War
+        // PHASE IV: Deploy to Dev Environment
         // ===========================================
         stage('⚔️ Deploy to Dev Engagement Zone') {
             steps {
                 script {
-                    // Load sacred kube config
-                    def kubeConfig = readFile(KUBECONFIG)
+                    // Purge old deployments
+                    sh "kubectl delete --all deployments --namespace=default || true"
 
-                    // Purge old constructs
-                    sh "kubectl delete --all deployments --namespace=default"
-
-                    // Update deployment image tag
+                    // Update deployment image
                     sh "sed -i 's|${DOCKER_IMAGE}:latest|${DOCKER_IMAGE}:${IMAGE_TAG}|' deployment-dev.yaml"
 
-                    // Deploy battle assets
+                    // Apply deployment
                     sh "kubectl apply -f deployment-dev.yaml"
                 }
             }
         }
 
         // ===========================================
-        // PHASE V: Expose to hostile penetration testing
+        // PHASE V: DAST Testing
         // ===========================================
         stage('🔮 DAST Inquisitorial Ordeal') {
             steps {
-                // IMPORTANT: Update cluster IP
                 sh 'docker pull public.ecr.aws/portswigger/dastardly:latest'
-
                 sh '''
                     docker run --user $(id -u) -v ${WORKSPACE}:${WORKSPACE}:rw \
                     -e HOME=${WORKSPACE} \
@@ -109,7 +103,18 @@ EOF
         }
 
         // ===========================================
-        // PHASE VI: Purge corrupted data after trial
+        // PHASE Vb: Ensure Flask Pod Ready
+        // ===========================================
+        stage('🟢 Ensure Flask Pod Ready') {
+            steps {
+                script {
+                    sh "kubectl wait --for=condition=ready pod -l app=flask --timeout=120s"
+                }
+            }
+        }
+
+        // ===========================================
+        // PHASE VI: Purge old DB data
         // ===========================================
         stage('🧹 Dev Database Purification') {
             steps {
@@ -121,34 +126,55 @@ EOF
 
                     sh """
                         kubectl exec ${appPod} -- python3 - <<'PY'
-                        import sqlite3
-                        conn = sqlite3.connect('/nfs/demo.db')
-                        cur = conn.cursor()
-                        cur.execute('DELETE FROM parts')
-                        conn.commit()
-                        conn.close()
-                        PY
+import sqlite3
+conn = sqlite3.connect('/nfs/demo.db')
+cur = conn.cursor()
+cur.execute('DELETE FROM warhammer')
+conn.commit()
+conn.close()
+PY
                     """
                 }
             }
         }
 
         // ===========================================
-        // PHASE VII: Generate test data for compliance
+        // PHASE VII: Generate Test Data
         // ===========================================
         stage('📦 Test Data Resupply') {
             steps {
                 script {
                     def appPod = sh(script: "kubectl get pods -l app=flask -o jsonpath='{.items[0].metadata.name}'", returnStdout: true).trim()
-                    sh "sleep 15"
-                    sh "kubectl get pods"
-                    sh "kubectl exec ${appPod} -- python3 data-gen.py"
+
+                    // Small delay to allow Flask to stabilize
+                    sh "sleep 10"
+
+                    sh "kubectl exec ${appPod} -- python3 /app/data-gen.py"
+                    echo "✅ Test data inserted successfully"
                 }
             }
         }
 
         // ===========================================
-        // PHASE VIII: Perform Mechanicus Trials (Acceptance Tests)
+        // PHASE VIII: Selenium QA Verification
+        // ===========================================
+        stage('⚙️ Selenium QA Verification') {
+            steps {
+                script {
+                    def appPodIP = sh(
+                        script: "kubectl get pod -l app=flask -o jsonpath='{.items[0].status.podIP}'",
+                        returnStdout: true
+                    ).trim()
+
+                    echo "🌐 Running Selenium tests against Flask pod at ${appPodIP}"
+
+                    sh "python3 tests/test_selenium.py --base-url=http://${appPodIP}:5000"
+                }
+            }
+        }
+
+        // ===========================================
+        // PHASE IX: QA Docker Tests (Mechanicus Trials)
         // ===========================================
         stage('⚙️ Adeptus QA Trial Protocols') {
             steps {
@@ -162,7 +188,7 @@ EOF
         }
 
         // ===========================================
-        // PHASE IX: Cleanup combat logs and residues
+        // PHASE X: Cleanup Test Data
         // ===========================================
         stage('🧽 Purge Test Data') {
             steps {
@@ -174,7 +200,7 @@ EOF
         }
 
         // ===========================================
-        // PHASE X: Send war asset to final production front
+        // PHASE XI: Deploy to Production
         // ===========================================
         stage('🚀 Deploy to Holy Production Server') {
             steps {
@@ -187,7 +213,7 @@ EOF
         }
 
         // ===========================================
-        // PHASE XI: Verify battle readiness
+        // PHASE XII: Verify Deployment
         // ===========================================
         stage('📡 Vox Confirmations') {
             steps {

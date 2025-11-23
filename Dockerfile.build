@@ -1,26 +1,31 @@
-# Use a lightweight Python image
 FROM python:3.9-slim
 
-# Install system dependencies
-RUN apt-get update && \
-    apt-get install -y python3-dev build-essential nfs-common && \
+# Install dependencies
+RUN apt-get clean && apt-get -y update && apt-get -y install \
+    nginx python3-dev build-essential nfs-common firefox-esr wget unzip && \
     rm -rf /var/lib/apt/lists/*
 
-# Set working directory
-WORKDIR /app
-
-# Copy Python dependencies first for caching
-COPY requirements1.txt .
-RUN pip install --no-cache-dir -r requirements1.txt
-
-# Copy all application files into /app
-COPY . .
-
-# Create mount point for NFS (will be overridden by Kubernetes)
+# Create mount point for NFS
 RUN mkdir -p /nfs
 
-# Expose Flask port
+# Copy database if needed
+COPY /data/demo.db /nfs
+
+# Copy application files
+COPY . .
+
+# Copy tests folder
+COPY tests ./tests
+
+# Install Python dependencies
+RUN pip install -r requirements1.txt
+RUN pip install selenium
+
+# Install geckodriver for Selenium
+RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.34.0/geckodriver-v0.34.0-linux64.tar.gz && \
+    tar -xvzf geckodriver-v0.34.0-linux64.tar.gz && mv geckodriver /usr/local/bin/ && rm geckodriver-v0.34.0-linux64.tar.gz
+
 EXPOSE 5000
 
-# Default command to run Flask
+# Command to run the Flask app
 CMD ["python3", "main.py"]

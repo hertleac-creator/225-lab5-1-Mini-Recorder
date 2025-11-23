@@ -1,37 +1,22 @@
 FROM python:3.9-slim
 
-# Install dependencies
-RUN apt-get clean && apt-get -y update && apt-get -y install \
-    nginx python3-dev build-essential nfs-common firefox-esr wget unzip && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y \
+    nfs-common \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create mount point for NFS
 RUN mkdir -p /nfs
 
-# Copy database if exists (optional)
-COPY data/demo.db /nfs/demo.db
-
-# Set working directory
 WORKDIR /app
 
-# Copy application files
-COPY main.py .
 COPY requirements1.txt .
+RUN pip install -r requirements1.txt
 
-# Explicitly copy data-gen.py and tests folder
+COPY main.py .
 COPY data-gen.py .
 COPY tests ./tests
+COPY data/demo.db /nfs/demo.db
 
-# Install Python dependencies
-RUN pip install -r requirements1.txt
-RUN pip install selenium
-
-# Install geckodriver for Selenium
-RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.34.0/geckodriver-v0.34.0-linux64.tar.gz && \
-    tar -xvzf geckodriver-v0.34.0-linux64.tar.gz && mv geckodriver /usr/local/bin/ && rm geckodriver-v0.34.0-linux64.tar.gz
-
-# Expose Flask port
 EXPOSE 5000
 
-# Command to run Flask
 CMD ["python3", "main.py"]
+

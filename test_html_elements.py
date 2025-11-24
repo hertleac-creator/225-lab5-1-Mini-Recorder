@@ -1,30 +1,29 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.options import Options
 import unittest
-import urllib.request
-import os
-import sys
 
-ENV = os.environ.get("ENVIRONMENT", "dev").lower()
-if len(sys.argv) > 1 and sys.argv[1].startswith("--base-url="):
-    BASE_URL = sys.argv[1].split("=",1)[1]
-else:
-    if ENV == "prod":
-        BASE_URL = "http://10.48.229.50"
-    else:
-        BASE_URL = "http://127.0.0.1:5000"
+class TestParts(unittest.TestCase):
+    def setUp(self):
+        # Setup Firefox options
+        firefox_options = Options()
+        firefox_options.add_argument("--headless")  # Ensures the browser window does not open
+        firefox_options.add_argument("--no-sandbox")
+        firefox_options.add_argument("--disable-dev-shm-usage")
+        self.driver = webdriver.Firefox(options=firefox_options)
 
-class HttpLightTests(unittest.TestCase):
+    def test_parts(self):
+        driver = self.driver
+        driver.get("http://10.48.229.148")  # Replace with your cluster/dev site
+        
+        # Check for the presence of all 10 test parts
+        for i in range(10):
+            test_name = f'Test Part {i}'
+            assert test_name in driver.page_source, f"Test part {test_name} not found in page source"
+        print("Test completed successfully. All 10 test parts were verified.")
 
-    def test_index_page_loads(self):
-        with urllib.request.urlopen(BASE_URL) as response:
-            self.assertEqual(response.status, 200)
-
-    def test_sample_warhammer_units_exist(self):
-        with urllib.request.urlopen(BASE_URL) as response:
-            html = response.read().decode('utf-8')
-
-        expected_units = [f"Test Model {i}" for i in range(10)]
-        found = any(unit in html for unit in expected_units)
-        self.assertTrue(found, "No Test Model entries found in the page source")
+    def tearDown(self):
+        self.driver.quit()
 
 if __name__ == "__main__":
-    unittest.main(argv=[sys.argv[0]] + sys.argv[1:])
+    unittest.main()

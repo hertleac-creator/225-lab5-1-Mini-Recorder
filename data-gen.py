@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 import sqlite3
 import os
+import sys
 
 DATABASE = "/nfs/demo.db"
 
-def connect():
+def connect_db():
     os.makedirs(os.path.dirname(DATABASE), exist_ok=True)
     return sqlite3.connect(DATABASE)
 
-def init():
-    db = connect()
+def init_db():
+    db = connect_db()
     db.execute("""
         CREATE TABLE IF NOT EXISTS warhammer (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,24 +23,33 @@ def init():
     db.commit()
     db.close()
 
-def clear():
-    db = connect()
+def clear_table():
+    db = connect_db()
     db.execute("DELETE FROM warhammer")
     db.commit()
     db.close()
 
-def generate():
-    db = connect()
-    for i in range(10):
+def generate_test_data(num_records=10):
+    db = connect_db()
+    for i in range(num_records):
+        model = f"Test Model {i}"
+        faction = f"Faction {i}"
+        painted = 1
+        owned = 10
         db.execute(
             "INSERT INTO warhammer (model_name, faction, painted, models_owned) VALUES (?, ?, ?, ?)",
-            (f"Test Model {i}", f"Faction {i}", 1, 10)
+            (model, faction, painted, owned)
         )
     db.commit()
     db.close()
-    print("Generated 10 fresh test models.")
+    print(f"Inserted {num_records} test models")
 
 if __name__ == "__main__":
-    init()
-    clear()
-    generate()
+    try:
+        init_db()
+        clear_table()
+        n = int(sys.argv[1]) if len(sys.argv) > 1 else 10
+        generate_test_data(n)
+    except Exception as e:
+        print("Error:", e)
+        sys.exit(1)

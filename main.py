@@ -2,6 +2,7 @@ from flask import Flask, request, render_template, redirect, url_for, flash
 import sqlite3
 import os
 import math
+import random
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret")
@@ -15,11 +16,11 @@ def get_db():
     return db
 
 def init_db():
-    """Initialize the database with a motorcycle parts table."""
+    """Initialize the database with Warhammer minis table."""
     with app.app_context():
         db = get_db()
 
-        # Drop old contacts table if it exists
+        # Drop old table if it exists
         db.execute("DROP TABLE IF EXISTS parts")
 
         # Create the new parts table
@@ -34,15 +35,22 @@ def init_db():
             );
         ''')
 
-        # Optional sample data
-        sample_parts = [
-            ("Brake Pad", "Brakes", 50, 25.99, "High performance front brake pad"),
-            ("Oil Filter", "Engine", 100, 7.50, "OEM replacement oil filter"),
-            ("Tire", "Wheels", 20, 120.00, "Sport rear tire 180/55ZR17")
-        ]
+        # Generate sample Warhammer minis
+        factions = ['Space Marines', 'Orks', 'Eldar', 'Chaos', 'Necrons', 'Tyranids']
+        detachments = ['Battle Company', 'Kill Team', 'Strike Force', 'Vanguard', 'Patrol']
+        minis = []
+
+        for i in range(10):
+            name = f'Mini {i}'
+            category = random.choice(factions)
+            quantity = random.randint(1, 20)  # points
+            price = round(random.uniform(10.0, 100.0), 2)  # cost
+            description = random.choice(detachments)
+            minis.append((name, category, quantity, price, description))
+
         db.executemany(
             "INSERT INTO parts (name, category, quantity, price, description) VALUES (?, ?, ?, ?, ?)",
-            sample_parts
+            minis
         )
 
         db.commit()
@@ -64,9 +72,9 @@ def index():
                 db = get_db()
                 db.execute('DELETE FROM parts WHERE id = ?', (part_id,))
                 db.commit(); db.close()
-                flash('Part deleted successfully.', 'success')
+                flash('Mini deleted successfully.', 'success')
             else:
-                flash('Missing part id.', 'danger')
+                flash('Missing mini id.', 'danger')
             return redirect(url_for('index'))
 
         # UPDATE PART
@@ -86,12 +94,12 @@ def index():
                     WHERE id=?
                 ''', (name, category, quantity, price, description, part_id))
                 db.commit(); db.close()
-                flash('Part updated.', 'success')
+                flash('Mini updated.', 'success')
             else:
                 flash('Missing required fields for update.', 'danger')
             return redirect(url_for('index'))
 
-        # ADD NEW PART
+        # ADD NEW MINI
         name = request.form.get('name')
         category = request.form.get('category')
         quantity = request.form.get('quantity')
@@ -105,7 +113,7 @@ def index():
                 VALUES (?, ?, ?, ?, ?)
             ''', (name, category, quantity, price, description))
             db.commit(); db.close()
-            flash('Part added successfully.', 'success')
+            flash('Mini added successfully.', 'success')
         else:
             flash('Name is required.', 'danger')
 

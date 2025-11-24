@@ -11,87 +11,169 @@ pipeline {
 
     stages {
 
-        // ===============================
-        // Checkout Source
-        // ===============================
-        stage('Checkout') {
+        // ==============================================================
+        // PHASE I – Retrieve sacred data from the Mechanicus vault
+        // ==============================================================
+        stage('⚙️ Data-Vault Checkout') {
             steps {
                 cleanWs()
-                checkout([
-                    $class: 'GitSCM',
+                checkout([$class: 'GitSCM',
                     branches: [[name: '*/main']],
                     userRemoteConfigs: [[url: "${GITHUB_URL}"]]
                 ])
             }
         }
 
-        // ===============================
-        // Static Code Review
-        // ===============================
-        stage('Static Tests') {
+        // ==============================================================
+        // PHASE II – Code Canticle Litanies
+        // ==============================================================
+        stage('📜 Static Purity Tests') {
             steps {
                 sh 'python3 -m py_compile $(find . -name "*.py")'
             }
         }
 
-        // ===============================
-        // Build Docker Image
-        // ===============================
-        stage('Build Docker') {
+        // ==============================================================
+        // PHASE III – Forge Docker War Machine
+        // ==============================================================
+        stage('🏭 Forge Docker War Machine') {
             steps {
                 script {
-                    docker.withRegistry('https://registry.hub.docker.com', "${DOCKER_CREDENTIALS_ID}") {
-                        def app = docker.build("${DOCKER_IMAGE}:${IMAGE_TAG}", "-f Dockerfile.build .")
+                    docker.withRegistry(
+                        'https://registry.hub.docker.com',
+                        "${DOCKER_CREDENTIALS_ID}"
+                    ) {
+                        def app = docker.build(
+                            "${DOCKER_IMAGE}:${IMAGE_TAG}",
+                            "-f Dockerfile.build ."
+                        )
                         app.push()
                     }
                 }
             }
         }
 
-        // ===============================
-        // Deploy to Dev
-        // ===============================
-        stage('Deploy to Dev') {
+        // ==============================================================
+        // PHASE IV – Deploy to Dev Engagement Zone
+        // ==============================================================
+        stage('⚔️ Deploy to Dev Engagement Zone') {
             steps {
                 script {
+                    sh "kubectl delete --all deployments --namespace=default || true"
                     sh "sed -i 's|${DOCKER_IMAGE}:latest|${DOCKER_IMAGE}:${IMAGE_TAG}|' deployment-dev.yaml"
                     sh "kubectl apply -f deployment-dev.yaml"
                 }
             }
         }
 
-        // ===============================
-        // Init Database
-        // ===============================
-        stage('Initialize DB') {
+        // ==============================================================
+        // PHASE V – Await pod readiness
+        // ==============================================================
+        stage('🟢 Await Pod Readiness') {
+            steps {
+                sh "kubectl wait --for=condition=ready pod -l app=flask --timeout=120s"
+            }
+        }
+
+        // ==============================================================
+        // PHASE VI – Purge stale heresy from the database
+        // ==============================================================
+        stage('🧹 Dev Database Purification') {
             steps {
                 script {
-                    def appPod = sh(
+                    def pod = sh(
                         script: "kubectl get pods -l app=flask -o jsonpath='{.items[0].metadata.name}'",
                         returnStdout: true
                     ).trim()
 
-                    sh "kubectl exec ${appPod} -- python3 /app/data-gen.py"
+                    sh """
+                    kubectl exec ${pod} -- python3 - << 'PY'
+import sqlite3
+conn = sqlite3.connect('/nfs/demo.db')
+cur = conn.cursor()
+cur.execute('DELETE FROM warhammer')
+conn.commit()
+conn.close()
+PY
+                    """
                 }
             }
         }
 
-        // ===============================
-        // Run Selenium Tests (outside)
-        // ===============================
-        stage('Selenium Tests') {
+        // ==============================================================
+        // PHASE VII – Generate Warhammer test data
+        // ==============================================================
+        stage('📦 Test Data Resupply') {
             steps {
-                sh 'python3 tests/test_selenium.py'
+                script {
+                    def pod = sh(
+                        script: "kubectl get pods -l app=flask -o jsonpath='{.items[0].metadata.name}'",
+                        returnStdout: true
+                    ).trim()
+
+                    sh "kubectl exec ${pod} -- python3 /app/data-gen.py"
+                }
+            }
+        }
+
+        // ==============================================================
+        // PHASE VIII – Selenium Field Trial
+        // ==============================================================
+        stage('🔍 Selenium Field Trial') {
+            steps {
+                script {
+                    def pod = sh(
+                        script: "kubectl get pods -l app=flask -o jsonpath='{.items[0].metadata.name}'",
+                        returnStdout: true
+                    ).trim()
+
+                    def podIP = sh(
+                        script: "kubectl get pod ${pod} -o jsonpath='{.status.podIP}'",
+                        returnStdout: true
+                    ).trim()
+
+                    sh "kubectl exec ${pod} -- python3 /app/tests/test_selenium.py --base-url=http://${podIP}:5000"
+                }
+            }
+        }
+
+        // ==============================================================
+        // PHASE IX – Clean up the holy records again
+        // ==============================================================
+        stage('🧽 Purge Test Data') {
+            steps {
+                script {
+                    def pod = sh(
+                        script: "kubectl get pods -l app=flask -o jsonpath='{.items[0].metadata.name}'",
+                        returnStdout: true
+                    ).trim()
+
+                    sh "kubectl exec ${pod} -- python3 /app/data-clear.py"
+                }
+            }
+        }
+
+        // ==============================================================
+        // PHASE X – Deploy to Holy Production Server
+        // ==============================================================
+        stage('🚀 Deploy to Production') {
+            steps {
+                script {
+                    sh "sed -i 's|${DOCKER_IMAGE}:latest|${DOCKER_IMAGE}:${IMAGE_TAG}|' deployment-prod.yaml"
+                    sh "kubectl apply -f deployment-prod.yaml"
+                }
             }
         }
     }
 
     post {
         success {
-            echo "✔ Build completed successfully!"
+            slackSend color: "good",
+                message: "🟢 Deployment successful — The Omnissiah approves!"
         }
         failure {
-            echo "❌ Build failed!"
+            slackSend color: "danger",
+                message: "🔴 Deployment FAILED — Tech-Priests to the manufactorum!"
         }
     }
 }

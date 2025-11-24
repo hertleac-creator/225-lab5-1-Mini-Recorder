@@ -1,179 +1,208 @@
 pipeline {
-    agent any
+    agent any 
 
     environment {
-        DOCKER_CREDENTIALS_ID = 'roseaw-dockerhub'
-        DOCKER_IMAGE = 'cithit/hertleac'
+        DOCKER_CREDENTIALS_ID = 'roseaw-dockerhub'  
+        DOCKER_IMAGE = 'cithit/hertleac'                                   //<-----change this to your MiamiID!
         IMAGE_TAG = "build-${BUILD_NUMBER}"
-        GITHUB_URL = 'https://github.com/hertleac-creator/225-lab5-1-Mini-Recorder.git'
-        KUBECONFIG = credentials('hertleac-225')
+        GITHUB_URL = 'https://github.com/Hibbarkm/225-lab5-1b.git'     //<-----change this to match this new repository!
+        KUBECONFIG = credentials('hertleac-225')                           //<-----change this to match your kubernetes credentials (MiamiID-225)! 
     }
 
     stages {
-
-        // ==============================================================
-        // PHASE I – Retrieve sacred data from the Mechanicus vault
-        // ==============================================================
-        stage('⚙️ Data-Vault Checkout') {
+        stage('Code Checkout') {
             steps {
                 cleanWs()
-                checkout([$class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    userRemoteConfigs: [[url: "${GITHUB_URL}"]]
-                ])
+                checkout([$class: 'GitSCM', branches: [[name: '*/main']],
+                          userRemoteConfigs: [[url: "${GITHUB_URL}"]]])
             }
         }
+        
 
-        // ==============================================================
-        // PHASE II – Code Canticle Litanies
-        // ==============================================================
-        stage('📜 Static Purity Tests') {
+        
+        
+        
+        stage('Lint HTML') {
             steps {
-                sh 'python3 -m py_compile $(find . -name "*.py")'
+                sh 'npm install htmlhint --save-dev'
+                sh 'npx htmlhint *.html'
             }
         }
 
-        // ==============================================================
-        // PHASE III – Forge Docker War Machine
-        // ==============================================================
-        stage('🏭 Forge Docker War Machine') {
+
+stage('Static Tests') {
+    steps {
+        // 1️⃣ Python static syntax test
+        sh 'python3 -m py_compile $(find . -name "*.py")'
+
+        // 2️⃣ YAML syntax check for Kubernetes manifests (supports multiple documents)
+        sh '''
+        python3 - <<EOF
+import yaml, glob, sys
+for f in glob.glob("*.yaml"):
+    try:
+        with open(f) as file:
+            list(yaml.safe_load_all(file))  # safe_load_all handles multiple YAML documents
+    except Exception as e:
+        print(f"YAML ERROR in {f}: {e}")
+        sys.exit(1)
+EOF
+        '''
+    }
+}
+
+
+
+
+
+
+
+        
+        stage('Build & Push Docker Image') {
+          steps {
+            script {
+              docker.withRegistry('https://registry.hub.docker.com', "${DOCKER_CREDENTIALS_ID}") {
+                def app = docker.build("${DOCKER_IMAGE}:${IMAGE_TAG}", "-f Dockerfile.build .")
+                app.push()
+              }
+            }
+          }
+        }
+
+        stage('Deploy to Dev Environment') {
             steps {
                 script {
-                    docker.withRegistry(
-                        'https://registry.hub.docker.com',
-                        "${DOCKER_CREDENTIALS_ID}"
-                    ) {
-                        def app = docker.build(
-                            "${DOCKER_IMAGE}:${IMAGE_TAG}",
-                            "-f Dockerfile.build ."
-                        )
-                        app.push()
-                    }
-                }
-            }
-        }
-
-        // ==============================================================
-        // PHASE IV – Deploy to Dev Engagement Zone
-        // ==============================================================
-        stage('⚔️ Deploy to Dev Engagement Zone') {
-            steps {
-                script {
-                    sh "kubectl delete --all deployments --namespace=default || true"
+                    // This sets up the Kubernetes configuration using the specified KUBECONFIG
+                    def kubeConfig = readFile(KUBECONFIG)
+                    sh "kubectl delete --all deployments --namespace=default"
+                    // This updates the deployment-dev.yaml to use the new image tag
                     sh "sed -i 's|${DOCKER_IMAGE}:latest|${DOCKER_IMAGE}:${IMAGE_TAG}|' deployment-dev.yaml"
                     sh "kubectl apply -f deployment-dev.yaml"
                 }
             }
         }
+        
+      
+       
 
-        // ==============================================================
-        // PHASE V – Await pod readiness
-        // ==============================================================
-        stage('🟢 Await Pod Readiness') {
+        
+        
+        
+        stage ("Run Security Checks") {
             steps {
-                sh "kubectl wait --for=condition=ready pod -l app=flask --timeout=120s"
+                //                                                                 ###change the IP address in this section to your cluster IP address!!!!####
+                sh 'docker pull public.ecr.aws/portswigger/dastardly:latest'
+                sh '''
+                    docker run --user $(id -u) -v ${WORKSPACE}:${WORKSPACE}:rw \
+                    -e HOME=${WORKSPACE} \
+                    -e BURP_START_URL=http://10.48.229.148 \
+                    -e BURP_REPORT_FILE_PATH=${WORKSPACE}/dastardly-report.xml \
+                    public.ecr.aws/portswigger/dastardly:latest
+                '''
             }
         }
+        
+        stage('Reset DB After Security Checks') {
+          steps {
+            script {
+              // grab a running app pod
+              def appPod = sh(
+                script: "kubectl get pods -l app=flask -o jsonpath='{.items[0].metadata.name}'",
+                returnStdout: true
+              ).trim()
+        
+              sh """
+                kubectl exec ${appPod} -- python3 - <<'PY'
+                import sqlite3
+                conn = sqlite3.connect('/nfs/demo.db')
+                cur = conn.cursor()
+                cur.execute('DELETE FROM parts')
 
-        // ==============================================================
-        // PHASE VI – Purge stale heresy from the database
-        // ==============================================================
-        stage('🧹 Dev Database Purification') {
+                conn.commit()
+                conn.close()
+                PY
+                """
+
+            }
+          }
+        } 
+   
+        stage('Generate Test Data') {
             steps {
                 script {
-                    def pod = sh(
-                        script: "kubectl get pods -l app=flask -o jsonpath='{.items[0].metadata.name}'",
-                        returnStdout: true
-                    ).trim()
+                // Ensure the label accurately targets the correct pods.
+                def appPod = sh(script: "kubectl get pods -l app=flask -o jsonpath='{.items[0].metadata.name}'", returnStdout: true).trim()
+                // Execute command within the pod. 
+                sh "sleep 15"
+                sh "kubectl get pods"
+                sh "kubectl exec ${appPod} -- python3 data-gen.py"
+                }
+            }
+    }
 
-                    sh """
-                    kubectl exec ${pod} -- python3 - << 'PY'
-import sqlite3
-conn = sqlite3.connect('/nfs/demo.db')
-cur = conn.cursor()
-cur.execute('DELETE FROM warhammer')
-conn.commit()
-conn.close()
-PY
-                    """
+        stage("Run Acceptance Tests") {
+            steps {
+                script {
+                    sh 'docker stop qa-tests || true'
+                    sh 'docker rm qa-tests || true'
+                    sh 'docker build -t qa-tests -f Dockerfile.test .'
+                    sh 'docker run qa-tests'
                 }
             }
         }
+        
+     
 
-        // ==============================================================
-        // PHASE VII – Generate Warhammer test data
-        // ==============================================================
-        stage('📦 Test Data Resupply') {
+        
+        
+        
+        
+        
+       
+
+        
+        
+        
+        
+        stage('Remove Test Data') {
             steps {
                 script {
-                    def pod = sh(
-                        script: "kubectl get pods -l app=flask -o jsonpath='{.items[0].metadata.name}'",
-                        returnStdout: true
-                    ).trim()
-
-                    sh "kubectl exec ${pod} -- python3 /app/data-gen.py"
+                    // Run the python script to generate data to add to the database
+                    def appPod = sh(script: "kubectl get pods -l app=flask -o jsonpath='{.items[0].metadata.name}'", returnStdout: true).trim()
+                    sh "kubectl exec ${appPod} -- python3 data-clear.py"
                 }
             }
         }
-
-        // ==============================================================
-        // PHASE VIII – Selenium Field Trial
-        // ==============================================================
-        stage('🔍 Selenium Field Trial') {
+          stage('Deploy to Prod Environment') {
             steps {
                 script {
-                    def pod = sh(
-                        script: "kubectl get pods -l app=flask -o jsonpath='{.items[0].metadata.name}'",
-                        returnStdout: true
-                    ).trim()
-
-                    def podIP = sh(
-                        script: "kubectl get pod ${pod} -o jsonpath='{.status.podIP}'",
-                        returnStdout: true
-                    ).trim()
-
-                    sh "kubectl exec ${pod} -- python3 /app/tests/test_selenium.py --base-url=http://${podIP}:5000"
-                }
-            }
-        }
-
-        // ==============================================================
-        // PHASE IX – Clean up the holy records again
-        // ==============================================================
-        stage('🧽 Purge Test Data') {
-            steps {
-                script {
-                    def pod = sh(
-                        script: "kubectl get pods -l app=flask -o jsonpath='{.items[0].metadata.name}'",
-                        returnStdout: true
-                    ).trim()
-
-                    sh "kubectl exec ${pod} -- python3 /app/data-clear.py"
-                }
-            }
-        }
-
-        // ==============================================================
-        // PHASE X – Deploy to Holy Production Server
-        // ==============================================================
-        stage('🚀 Deploy to Production') {
-            steps {
-                script {
+                    // Set up Kubernetes configuration using the specified KUBECONFIG
+                    //sh "ls -la"
                     sh "sed -i 's|${DOCKER_IMAGE}:latest|${DOCKER_IMAGE}:${IMAGE_TAG}|' deployment-prod.yaml"
+                    sh "cd .."
                     sh "kubectl apply -f deployment-prod.yaml"
+                }
+            }
+        }     
+        stage('Check Kubernetes Cluster') {
+            steps {
+                script {
+                    sh "kubectl get all"
                 }
             }
         }
     }
 
     post {
+
         success {
-            slackSend color: "good",
-                message: "🟢 Deployment successful — The Omnissiah approves!"
+            slackSend color: "good", message: "Build Completed: ${env.JOB_NAME} ${env.BUILD_NUMBER}"
+        }
+        unstable {
+            slackSend color: "warning", message: "Build Completed: ${env.JOB_NAME} ${env.BUILD_NUMBER}"
         }
         failure {
-            slackSend color: "danger",
-                message: "🔴 Deployment FAILED — Tech-Priests to the manufactorum!"
+            slackSend color: "danger", message: "Build Completed: ${env.JOB_NAME} ${env.BUILD_NUMBER}"
         }
     }
 }

@@ -3,7 +3,7 @@ import sqlite3
 import os
 import math
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='static/templates')
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret")
 
 DATABASE = "/nfs/demo.db"

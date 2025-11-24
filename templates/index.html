@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Motorcycle Parts Inventory</title>
+    <title>Warhammer Tracker</title>
 
     <!-- Fonts (branding) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,8 +18,8 @@
 
       <header class="mb-4 py-3 border-bottom d-flex align-items-center">
         <div>
-          <div class="miami-title">Motorcycle Parts Inventory</div>
-          <div class="miami-subtitle">by Keith Hibbard</div>
+          <div class="miami-title">Warhammer Tracker</div>
+          <div class="miami-subtitle">by Erwin Hertlein</div>
         </div>
       </header>
 
@@ -41,22 +41,22 @@
       <!-- Add Part Form -->
       <div class="card shadow-sm form-card mb-4">
         <div class="card-body">
-          <h2 class="h5 mb-3">Add Motorcycle Part</h2>
+          <h2 class="h5 mb-3">Add Mini</h2>
           <form method="POST" action="{{ url_for('index') }}" class="row g-3">
             <input type="hidden" name="action" value="add">
 
             <div class="col-md-6">
-              <label for="name" class="form-label">Part Name</label>
+              <label for="name" class="form-label">mini Name</label>
               <input class="form-control" id="name" name="name" required>
             </div>
 
             <div class="col-md-6">
-              <label for="category" class="form-label">Category</label>
+              <label for="category" class="form-label">faction</label>
               <input class="form-control" id="category" name="category" required>
             </div>
 
             <div class="col-md-4">
-              <label for="quantity" class="form-label">Quantity</label>
+              <label for="quantity" class="form-label">points</label>
               <input class="form-control" type="number" id="quantity" name="quantity" min="0" required>
             </div>
 
@@ -66,12 +66,12 @@
             </div>
 
             <div class="col-md-4">
-              <label for="description" class="form-label">Description</label>
+              <label for="description" class="form-label">painted?</label>
               <input class="form-control" id="description" name="description">
             </div>
 
             <div class="col-12">
-              <button class="btn btn-primary" type="submit">Add Part</button>
+              <button class="btn btn-primary" type="submit">Add mini</button>
             </div>
           </form>
         </div>
@@ -79,7 +79,7 @@
 
       <!-- Search + heading -->
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <h2 class="h5 m-0">All Parts</h2>
+        <h2 class="h5 m-0">All minis</h2>
         <input id="filter" class="form-control" style="max-width: 280px;" placeholder="Search…">
       </div>
 

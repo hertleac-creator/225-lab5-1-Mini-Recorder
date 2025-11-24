@@ -14,7 +14,7 @@ class TestParts(unittest.TestCase):
 
     def test_parts(self):
         driver = self.driver
-        driver.get("http://10.48.229.148")  # Replace with your cluster/dev site
+        driver.get("http://10.43.240.177")  # Replace with your cluster/dev site
         
         # Check for the presence of all 10 test parts
         for i in range(10):

@@ -2,7 +2,6 @@ from flask import Flask, request, render_template, redirect, url_for, flash
 import sqlite3
 import os
 import math
-import random
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret")
@@ -35,22 +34,16 @@ def init_db():
             );
         ''')
 
-        # Generate sample Warhammer minis
-        factions = ['Space Marines', 'Orks', 'Eldar', 'Chaos', 'Necrons', 'Tyranids']
-        detachments = ['Battle Company', 'Kill Team', 'Strike Force', 'Vanguard', 'Patrol']
-        minis = []
-
-        for i in range(10):
-            name = f'Mini {i}'
-            category = random.choice(factions)
-            quantity = random.randint(1, 20)  # points
-            price = round(random.uniform(10.0, 100.0), 2)  # cost
-            description = random.choice(detachments)
-            minis.append((name, category, quantity, price, description))
+        # Warhammer-themed sample data (3 items)
+        sample_parts = [
+            ("Tactical Marine", "Space Marines", 10, 50.00, "Battle Company"),
+            ("Ork Nob", "Orks", 8, 40.00, "Strike Force"),
+            ("Eldar Ranger", "Eldar", 12, 60.00, "Vanguard")
+        ]
 
         db.executemany(
             "INSERT INTO parts (name, category, quantity, price, description) VALUES (?, ?, ?, ?, ?)",
-            minis
+            sample_parts
         )
 
         db.commit()

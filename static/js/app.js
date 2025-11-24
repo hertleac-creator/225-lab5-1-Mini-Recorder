@@ -1,37 +1,31 @@
-// ===============================================
-// IMPERIAL DATA-SLATE: LOCAL TEXT FILTER
-// Filters table rows by name or contact sigil
-// ===============================================
+// Client-side filter
+const filter = document.getElementById('filter');
+const rows = document.getElementById('rows');
 
-const auspexFilter = document.getElementById('filter');
-const dataRows = document.getElementById('rows');
+filter?.addEventListener('input', () => {
+  const q = filter.value.toLowerCase();
+  for (const tr of rows.querySelectorAll('tr')) {
+    const name = tr.querySelector('.name')?.textContent.toLowerCase() || '';
+    const category = tr.querySelector('.category')?.textContent.toLowerCase() || '';
+    const quantity = tr.querySelector('.quantity')?.textContent.toLowerCase() || '';
+    const price = tr.querySelector('.price')?.textContent.toLowerCase() || '';
+    const description = tr.querySelector('.description')?.textContent.toLowerCase() || '';
 
-auspexFilter?.addEventListener('input', () => {
-  const query = auspexFilter.value.toLowerCase();
-
-  for (const row of dataRows.querySelectorAll('tr')) {
-    const designation = row.querySelector('.Model Name')?.textContent.toLowerCase() || '';
-    const vox = row.querySelector('.Faction')?.textContent.toLowerCase() || '';
-
-    // If the row does not match the search, it is purged from view
-    row.style.display = (designation.includes(query) || vox.includes(query))
-      ? ''
-      : 'none';
+    tr.style.display = (name.includes(q) || category.includes(q) || quantity.includes(q) || price.includes(q) || description.includes(q)) ? '' : 'none';
   }
 });
 
-
-// ===============================================
-// ADEPTUS ADMINISTRATUM: EDIT MODAL POPULATION
-// Loads unit details into the modal for adjustment
-// ===============================================
-
-const editChamber = document.getElementById('editModal');
-
-editChamber?.addEventListener('show.bs.modal', (ev) => {
-  const activator = ev.relatedTarget;
-
-  document.getElementById('edit-id').value    = activator.getAttribute('data-id');
+// Edit modal populate
+const editModal = document.getElementById('editModal');
+editModal?.addEventListener('show.bs.modal', (ev) => {
+  const btn = ev.relatedTarget;
+  document.getElementById('edit-id').value         = btn.getAttribute('data-id');
+  document.getElementById('edit-name').value       = btn.getAttribute('data-name');
+  document.getElementById('edit-category').value   = btn.getAttribute('data-category');
+  document.getElementById('edit-quantity').value   = btn.getAttribute('data-quantity');
+  document.getElementById('edit-price').value      = btn.getAttribute('data-price');
+  document.getElementById('edit-description').value= btn.getAttribute('data-description');
+});
   document.getElementById('edit-Model Name').value  = activator.getAttribute('data-Model Name');
   document.getElementById('edit-Faction').value = activator.getAttribute('data-Faction');
 });
